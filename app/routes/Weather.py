@@ -98,41 +98,21 @@ def create_destination():
 	except ValueError as exc:
 		return jsonify({"error": str(exc)}), 400
 
+	for date in range_dates:
+		temperature_response = Temperature.get_temperature(lat, lon, date)
+		temperatures_in_location_between_dates.append(
+			{
+				"date": date,
+				"temperatures": temperature_response,
+			}
+		)
 
-	temperature = Temperature.get_temperature(48.8566,2.3522,"2026-03-28")
-	return temperature
-	# for date in range_dates:
-	# 	temperature_response = Temperature.get_temperature(lat, lon, date)
-	# 	location_weather_map = temperature_response.get("data", {})
-
-	# 	if location_formatted in location_weather_map:
-	# 		weather_data = location_weather_map.get(location_formatted, {})
-	# 	elif location in location_weather_map:
-	# 		weather_data = location_weather_map.get(location, {})
-	# 	elif location_weather_map:
-	# 		weather_data = next(iter(location_weather_map.values()))
-
-	# 	weather_entries = weather_data.get("weather", [])
-	# 	description = (
-	# 		weather_entries[0].get("description")
-	# 		if weather_entries and isinstance(weather_entries[0], dict)
-	# 		else None
-	# 	)
-
-	# 	temperatures_in_location_between_dates.append(
-	# 		{
-	# 			"date": date,
-	# 			"temperature": weather_data.get("temp"),
-	# 			"weather_description": description,
-	# 		}
-	# 	)
-
-	# return jsonify(
-	# 	{
-	# 		"location": location_formatted,
-	# 		"temperatures": temperatures_in_location_between_dates,
-	# 	}
-	# ), 200
+	return jsonify(
+		{
+			"location": location_formatted,
+			"weather": temperatures_in_location_between_dates,
+		}
+	), 200
 
 
 

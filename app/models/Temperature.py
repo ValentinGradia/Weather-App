@@ -52,7 +52,7 @@ class Temperature:
 
 		#mean -> average
 		return {
-			"morning": mean(morning),
-			"afternoon": mean(afternoon),
-			"night": mean(night)
+			"morning": f"{mean(morning):.2f} °C",
+			"afternoon": f"{mean(afternoon):.2f} °C",
+			"night": f"{mean(night):.2f} °C"
 		}
