@@ -3,13 +3,13 @@ from main import db
 class Destination(db.Model):
 	id = db.Column(db.Integer, primary_key=True)
 	location = db.Column(db.String(100), nullable=False)
-	weather = db.Column(db.String(100), nullable=False)
+	temperature = db.Column(db.String(100), nullable=False)
 	description = db.Column(db.String(100), nullable=True)
 
 	def to_dict(self):
 		return {
 			"id": self.id,
-			"weather": self.weather,
+			"temperature": self.temperature,
 			"description": self.description
 		}
 

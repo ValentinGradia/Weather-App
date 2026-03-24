@@ -1,9 +1,10 @@
 from datetime import datetime
 import difflib
 import json
-from app.validation.Validation import UserInputDestinationValidation
+from app.models.Validation import UserInputDestinationValidation
 from urllib.parse import urlencode
 from urllib.request import urlopen
+from app.models.Temperature import Temperature
 
 from flask import jsonify, request
 
@@ -77,7 +78,6 @@ def create_destination():
 
 	if not location or not start_date or not end_date:
 		return jsonify({"error": "location, start_date and end_date are required"}), 400
-
 	try:
 		resolved_location = UserInputDestinationValidation._handle_location(location)
 	except Exception:
@@ -86,38 +86,54 @@ def create_destination():
 	if not resolved_location:
 		return jsonify({"error": "location not found"}), 400
 	
-	return resolved_location
+	coordinates = resolved_location[0].get("geometry", {})
+	lat = coordinates.get("lat")
+	lon = coordinates.get("lng")
 
-	# temperatures = _fetch_temperatures(
-	# 	resolved_location["latitude"],
-	# 	resolved_location["longitude"],
-	# 	start.isoformat(),
-	# 	end.isoformat(),
-	# )
+	location_formatted = resolved_location[0]['formatted']
+	
+	temperatures_in_location_between_dates = []
+	try:
+		range_dates = UserInputDestinationValidation.get_all_dates_between(start_date, end_date)
+	except ValueError as exc:
+		return jsonify({"error": str(exc)}), 400
 
-	# stored_payload = {
-	# 	"location": {
-	# 		"requested": location,
-	# 		"resolved_name": resolved_location.get("name"),
-	# 		"country": resolved_location.get("country"),
-	# 		"latitude": resolved_location.get("latitude"),
-	# 		"longitude": resolved_location.get("longitude"),
-	# 	},
-	# 	"date_range": {
-	# 		"start_date": start.isoformat(),
-	# 		"end_date": end.isoformat(),
-	# 	},
-	# 	"temperatures": temperatures,
-	# }
 
-	# destination = Destination(
-	# 	weather=resolved_location.get("name", location),
-	# 	description=json.dumps(stored_payload),
-	# )
-	# db.session.add(destination)
-	# db.session.commit()
+	temperature = Temperature.get_temperature(48.8566,2.3522,"2026-03-28")
+	return temperature
+	# for date in range_dates:
+	# 	temperature_response = Temperature.get_temperature(lat, lon, date)
+	# 	location_weather_map = temperature_response.get("data", {})
 
-	# return jsonify(_destination_to_response(destination)), 201
+	# 	if location_formatted in location_weather_map:
+	# 		weather_data = location_weather_map.get(location_formatted, {})
+	# 	elif location in location_weather_map:
+	# 		weather_data = location_weather_map.get(location, {})
+	# 	elif location_weather_map:
+	# 		weather_data = next(iter(location_weather_map.values()))
+
+	# 	weather_entries = weather_data.get("weather", [])
+	# 	description = (
+	# 		weather_entries[0].get("description")
+	# 		if weather_entries and isinstance(weather_entries[0], dict)
+	# 		else None
+	# 	)
+
+	# 	temperatures_in_location_between_dates.append(
+	# 		{
+	# 			"date": date,
+	# 			"temperature": weather_data.get("temp"),
+	# 			"weather_description": description,
+	# 		}
+	# 	)
+
+	# return jsonify(
+	# 	{
+	# 		"location": location_formatted,
+	# 		"temperatures": temperatures_in_location_between_dates,
+	# 	}
+	# ), 200
+
 
 
 @app.route("/destinations", methods=["GET"])
