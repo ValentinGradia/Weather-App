@@ -2,6 +2,7 @@ from main import db
 
 class Destination(db.Model):
 	id = db.Column(db.Integer, primary_key=True)
+	location = db.Column(db.String(100), nullable=False)
 	weather = db.Column(db.String(100), nullable=False)
 	description = db.Column(db.String(100), nullable=True)
 
