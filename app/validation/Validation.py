@@ -1,5 +1,5 @@
 from datetime import datetime
-from main import geolocator, geocode
+from app.services.Opencage import geocoder
 
 class UserInputDestinationValidation:
 
@@ -26,21 +26,8 @@ class UserInputDestinationValidation:
 		return start_date, end_date
 	
 	@staticmethod
-	def _handle_location(location, value_location):
-		"""Resolve location input according to its type (GPS, name, or postal code)."""
-		place = None
-		match location:
-			case "GPS Coordinates":
-				place = geolocator.reverse(value_location)
-			case "City" | "Town" | "Country":
-				place = geocode(value_location)
-			case "Postal code" | "Postal Code" | "Zip Code":
-				# Help Nominatim interpret numeric zip inputs more reliably.
-				place = geocode(f"{value_location} postal code")
-				if place is None:
-					place = geocode(value_location)
-			case _:
-				place = geocode(value_location)
-
-		return place
+	def _handle_location(location):
+		place = geocoder.geocode(location)
+		result = place[0]['formatted']
+		return result
 
