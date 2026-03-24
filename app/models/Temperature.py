@@ -1,9 +1,43 @@
 import requests #import request to call externals apis 
 from datetime import datetime
 from statistics import mean
+from main import db
 
-class Temperature:
+class Temperature(db.Model):
+	id = db.Column(db.Integer, primary_key=True)
+	destination_id = db.Column(db.Integer, db.ForeignKey("destination.id"), nullable=False)
+	date = db.Column(db.Date, nullable=False)
+	temperature_morning = db.Column(db.Float, nullable=False)
+	temperature_afternoon = db.Column(db.Float, nullable=False)
+	temperature_night = db.Column(db.Float, nullable=False)
 
+	#We link our tables
+	destination = db.relationship("Destination", back_populates="temperatures")
+
+	def __init__(
+		self,
+		destination_id,
+		date,
+		temperature_morning,
+		temperature_afternoon,
+		temperature_night,
+	):
+		self.destination_id = destination_id
+		self.date = date
+		self.temperature_morning = temperature_morning
+		self.temperature_afternoon = temperature_afternoon
+		self.temperature_night = temperature_night
+
+	def to_dict(self):
+		return {
+			"id": self.id,
+			"destination_id": self.destination_id,
+			"date": self.date.isoformat() if self.date else None,
+			"temperature_morning": self.temperature_morning,
+			"temperature_afternoon": self.temperature_afternoon,
+			"temperature_night": self.temperature_night,
+		}
+	
 	@staticmethod
 	def get_temperature(lat, lon, date):
 		url = "https://api.openweathermap.org/data/2.5/forecast"

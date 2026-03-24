@@ -1,16 +1,15 @@
-from datetime import datetime
-import difflib
 import json
 from app.models.Validation import UserInputDestinationValidation
-from urllib.parse import urlencode
 from urllib.request import urlopen
 from app.models.Temperature import Temperature
 
-from flask import jsonify, request
+from flask import Blueprint, jsonify, request
 
-from main import app, db
+from main import db
 from app.models.Destination import Destination
 
+
+weather_bp = Blueprint("weather", __name__)
 
 
 
@@ -19,39 +18,6 @@ def _read_json_response(url):
 	with urlopen(url, timeout=10) as response:
 		return json.loads(response.read().decode("utf-8"))
 
-
-
-def _fetch_temperatures(latitude, longitude, start_date, end_date):
-	"""Fetch daily min/max temperatures for a validated location and date range."""
-	params = urlencode(
-		{
-			"latitude": latitude,
-			"longitude": longitude,
-			"start_date": start_date,
-			"end_date": end_date,
-			"daily": "temperature_2m_max,temperature_2m_min",
-			"timezone": "auto",
-		}
-	)
-	url = f"https://archive-api.open-meteo.com/v1/archive?{params}"
-	data = _read_json_response(url)
-	daily = data.get("daily", {})
-
-	times = daily.get("time", [])
-	max_values = daily.get("temperature_2m_max", [])
-	min_values = daily.get("temperature_2m_min", [])
-
-	temperatures = []
-	for idx, day in enumerate(times):
-		temperatures.append(
-			{
-				"date": day,
-				"min_temperature": min_values[idx] if idx < len(min_values) else None,
-				"max_temperature": max_values[idx] if idx < len(max_values) else None,
-			}
-		)
-
-	return temperatures
 
 
 def _destination_to_response(destination):
@@ -69,7 +35,7 @@ def _destination_to_response(destination):
 
 
 #CREATE: Validate input, fetch weather, and persist location/date-range weather request.
-@app.route("/destinations", methods=["POST"])
+@weather_bp.route("/destinations", methods=["POST"])
 def create_destination():
 	data = request.get_json()
 	location = data.get("location")
@@ -97,15 +63,30 @@ def create_destination():
 		range_dates = UserInputDestinationValidation.get_all_dates_between(start_date, end_date)
 	except ValueError as exc:
 		return jsonify({"error": str(exc)}), 400
+	
+	#Creation of our models
+	destination = Destination(location_formatted)
+
+	#We store our destination
+	db.session.add(destination)
+	db.session.commit()
 
 	for date in range_dates:
 		temperature_response = Temperature.get_temperature(lat, lon, date)
+
+		temperature = Temperature(destination.id, date, temperature_response["morning"][:4], 
+							temperature_response["afternoon"][:4], temperature_response["night"][:4])
+		
+		#We store our temperature
+		db.session.add(temperature)
+		db.session.commit()
 		temperatures_in_location_between_dates.append(
 			{
 				"date": date,
 				"temperatures": temperature_response,
 			}
 		)
+
 
 	return jsonify(
 		{
@@ -116,14 +97,14 @@ def create_destination():
 
 
 
-@app.route("/destinations", methods=["GET"])
+@weather_bp.route("/destinations", methods=["GET"])
 def get_destinations():
 	"""READ: Return all stored weather requests from the database."""
 	destinations = Destination.query.all()
 	return jsonify([_destination_to_response(destination) for destination in destinations]), 200
 
 
-@app.route("/destinations/<int:destination_id>", methods=["GET"])
+@weather_bp.route("/destinations/<int:destination_id>", methods=["GET"])
 def get_destination(destination_id):
 	"""READ: Return one stored weather request by its database ID."""
 	destination = Destination.query.get(destination_id)
@@ -190,7 +171,7 @@ def get_destination(destination_id):
 # 	return jsonify(_destination_to_response(destination)), 200
 
 
-@app.route("/destinations/<int:destination_id>", methods=["DELETE"])
+@weather_bp.route("/destinations/<int:destination_id>", methods=["DELETE"])
 def delete_destination(destination_id):
 	"""DELETE: Remove a stored weather request record from the database."""
 	destination = Destination.query.get(destination_id)
@@ -202,7 +183,3 @@ def delete_destination(destination_id):
 
 	return jsonify({"message": "destination deleted", "id": destination_id}), 200
 
-
-with app.app_context():
-	# Ensure SQLite tables exist before handling CRUD requests.
-	db.create_all()
