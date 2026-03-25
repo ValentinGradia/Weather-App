@@ -7,6 +7,7 @@ from app.models.Destination import Destination
 from app.models.Temperature import Temperature
 
 
+#
 @pytest.fixture
 def app_context():
     app = create_app()

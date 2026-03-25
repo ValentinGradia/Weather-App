@@ -3,26 +3,22 @@ from flask_sqlalchemy import SQLAlchemy
 import click
 import os
 from flask_migrate import Migrate
+from Configuration.Config import DevelopmentConfig
 
 
 db = SQLAlchemy()
 
 
-def create_app(test_config=None):
+def create_app(config=DevelopmentConfig):
     app = Flask(__name__, instance_relative_config=True)
 
-    app.config.from_pyfile('config.py', silent=True)
-    app.config.from_mapping(SECRET_KEY='dev')
+    # Configure the path to SQLite database
+    app.config.from_object(config)
 
     try:
         os.makedirs(app.instance_path)
     except OSError:
         pass
-
-    # Configure the path to SQLite database
-    app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///destinations.db"
-    app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-
 
     db.init_app(app)
 

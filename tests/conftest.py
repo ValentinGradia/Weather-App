@@ -2,7 +2,7 @@ import os
 import tempfile
 from main import create_app, db
 import pytest
-from Config import TestingConfig
+from Configuration.Config import TestingConfig
 
 #Fixture -> Functions that provide data or setup logic to our tests
 @pytest.fixture
