@@ -6,8 +6,9 @@ from datetime import datetime
 import requests
 from app.services.Youtube import get_video
 from app.models.Exceptions import ValidationError
+import json
 
-from flask import Blueprint, jsonify, request
+from flask import Blueprint, jsonify, request, make_response
 
 from main import db
 from app.models.Destination import Destination
@@ -122,6 +123,20 @@ def get_destination_through_location():
 
 	return destinations, 200
 
+@weather_bp.route("/destinations/export_by_location", methods=["GET"])
+def export_destination_through_location():
+	data = request.get_json()
+	location = data.get("location")
+
+	try:
+		resolved_location = UserInputDestinationValidation._handle_location(location)
+	except Exception:
+		return jsonify({"error": "failed to resolve location"}), 500
+	
+	destinations = Destination.query.filter(db.func.lower(Destination.location) == resolved_location[0]["formatted"].lower()).all()
+
+	return export_json(destinations)
+
 #UPDATE: We update the destination by its ID
 @weather_bp.route("/destinations/<int:destination_id>", methods=["PUT", "PATCH"])
 def update_destination(destination_id):
@@ -192,4 +207,11 @@ def delete_destination_by_location():
 	db.session.commit()
 
 	return jsonify({"message": "destination deleted"}), 200
+
+
+def export_json(data):
+    response = make_response(json.dumps([d.to_dict() for d in data], indent=2))
+    response.headers["Content-Disposition"] = "attachment; filename=weather_data.json"
+    response.headers["Content-Type"] = "application/json"
+    return response
 
