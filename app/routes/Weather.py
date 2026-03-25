@@ -5,6 +5,7 @@ from app.models.Temperature import Temperature
 from datetime import datetime
 import requests
 from app.services.Youtube import get_video
+from app.models.Exceptions import ValidationError
 
 from flask import Blueprint, jsonify, request
 
@@ -45,7 +46,7 @@ def create_destination():
 	temperatures_in_location_between_dates = []
 	try:
 		range_dates = UserInputDestinationValidation.get_all_dates_between(start_date, end_date)
-	except ValueError as exc:
+	except ValidationError as exc:
 		return jsonify({"error": str(exc)}), 400
 	
 	#Creation of our models
@@ -110,71 +111,59 @@ def get_destination_through_location():
 	data = request.get_json()
 	location = data.get("location")
 
+
 	try:
 		resolved_location = UserInputDestinationValidation._handle_location(location)
 	except Exception:
 		return jsonify({"error": "failed to resolve location"}), 500
+	
+	url_video_youtube = get_video(resolved_location[0]["formatted"])
 
 	destinations = [d.to_dict() for d in Destination.query.filter(db.func.lower(Destination.location) == resolved_location[0]["formatted"].lower()).all()]
+	destinations["youtube video"] = url_video_youtube
 
 	return destinations, 200
 
+#UPDATE: We update the destination by its ID
+@weather_bp.route("/destinations/<int:destination_id>", methods=["PUT", "PATCH"])
+def update_destination(destination_id):
+	destination : Destination = Destination.query.get(destination_id)
+	if not destination:
+		return jsonify({"error": "destination not found"}), 404
 
-# @app.route("/destinations/<int:destination_id>", methods=["PUT", "PATCH"])
-# def update_destination(destination_id):
-# 	"""UPDATE: Revalidate editable fields, refresh weather data, and persist updates."""
-# 	destination = Destination.query.get(destination_id)
-# 	if not destination:
-# 		return jsonify({"error": "destination not found"}), 404
+	data = request.get_json()
+	start_date = data.get("start_date")
+	end_date = data.get("end_date")
 
-# 	current_payload = _destination_to_response(destination)
-# 	current_location = current_payload.get("location", {})
-# 	current_dates = current_payload.get("date_range", {})
+	if not start_date or not end_date:
+		return jsonify({"error": "start_date and end_date are required"}), 400
 
-# 	data = request.get_json(silent=True) or {}
-# 	location = data.get("location", current_location.get("requested", destination.weather))
-# 	start_date = data.get("start_date", current_dates.get("start_date"))
-# 	end_date = data.get("end_date", current_dates.get("end_date"))
+	try:
+		start, end = UserInputDestinationValidation._validate_date_range(start_date, end_date)
+	except ValidationError as exc:
+		return jsonify({"error": str(exc)}), 400
 
-# 	if not location or not start_date or not end_date:
-# 		return jsonify({"error": "location, start_date and end_date are required"}), 400
+	data_of_destination = UserInputDestinationValidation._handle_location(destination.location)
+	coordinates = data_of_destination[0].get("geometry", {})
+	lat = coordinates.get("lat")
+	lon = coordinates.get("lng")
 
-# 	try:
-# 		start, end = UserInputDestinationValidation._validate_date_range(start_date, end_date)
-# 	except ValueError as exc:
-# 		return jsonify({"error": str(exc)}), 400
+	range_dates = UserInputDestinationValidation.get_all_dates_between(start_date, end_date)
 
-# 	resolved_location = _resolve_location(location)
-# 	if not resolved_location:
-# 		return jsonify({"error": "location not found"}), 400
+	#Get the temperatures of the specific location and delete these
+	Temperature.query.filter_by(destination_id=destination_id).delete()
 
-# 	temperatures = _fetch_temperatures(
-# 		resolved_location["latitude"],
-# 		resolved_location["longitude"],
-# 		start.isoformat(),
-# 		end.isoformat(),
-# 	)
+	for date in range_dates:
+		temperature_response = Temperature.get_temperature(lat, lon, date)
+		date_casted = datetime.strptime(date, "%Y-%m-%d").date()
 
-# 	updated_payload = {
-# 		"location": {
-# 			"requested": location,
-# 			"resolved_name": resolved_location.get("name"),
-# 			"country": resolved_location.get("country"),
-# 			"latitude": resolved_location.get("latitude"),
-# 			"longitude": resolved_location.get("longitude"),
-# 		},
-# 		"date_range": {
-# 			"start_date": start.isoformat(),
-# 			"end_date": end.isoformat(),
-# 		},
-# 		"temperatures": temperatures,
-# 	}
+		temperature = Temperature(destination.id, date_casted, temperature_response["morning"][:4], 
+					temperature_response["afternoon"][:4], temperature_response["night"][:4])
+		db.session.add(temperature)
 
-# 	destination.weather = resolved_location.get("name", location)
-# 	destination.description = json.dumps(updated_payload)
-# 	db.session.commit()
+	db.session.commit()
 
-# 	return jsonify(_destination_to_response(destination)), 200
+	return "The weather within the ranges of dates specified was updated correctly", 200
 
 
 @weather_bp.route("/destinations/<int:destination_id>", methods=["DELETE"])
