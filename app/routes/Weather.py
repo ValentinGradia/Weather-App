@@ -37,7 +37,7 @@ def create_destination():
 
 	location_formatted = resolved_location[0]['formatted']
 
-	if Destination.already_exists(location_formatted, start_date, end_date):
+	if Destination.already_exists(location_formatted.lower(), start_date, end_date):
 		return jsonify({"error": "location already stored for this date range"}), 409
 	
 	temperatures_in_location_between_dates = []
@@ -97,16 +97,21 @@ def get_destination(destination_id):
 
 	return destination.to_dict(), 200
 
-	# destinations = Destination.query.all()
-	# data = request.get_json()
-	# location = data.get("location")
-	# start_date = data.get("start_date")
-	# end_date = data.get("end_date")
 
-	# try:
-	# 	resolved_location = UserInputDestinationValidation._handle_location(location)
-	# except Exception:
-	# 	return jsonify({"error": "failed to resolve location"}), 500
+#READ: Return one stored weather request by its locations
+@weather_bp.route("/destinations/get_by_location", methods=["GET"])
+def get_destination_through_location():
+	data = request.get_json()
+	location = data.get("location")
+
+	try:
+		resolved_location = UserInputDestinationValidation._handle_location(location)
+	except Exception:
+		return jsonify({"error": "failed to resolve location"}), 500
+
+	destinations = [d.to_dict() for d in Destination.query.filter(db.func.lower(Destination.location) == resolved_location[0]["formatted"].lower()).all()]
+
+	return destinations, 200
 
 
 # @app.route("/destinations/<int:destination_id>", methods=["PUT", "PATCH"])
