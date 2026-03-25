@@ -3,6 +3,8 @@ from app.models.Validation import UserInputDestinationValidation
 from urllib.request import urlopen
 from app.models.Temperature import Temperature
 from datetime import datetime
+import requests
+from app.services.Youtube import get_video
 
 from flask import Blueprint, jsonify, request
 
@@ -92,10 +94,14 @@ def get_destinations():
 @weather_bp.route("/destinations/<int:destination_id>", methods=["GET"])
 def get_destination(destination_id):
 	destination : Destination = Destination.query.get(destination_id)
+
+	url_video_youtube = get_video(destination.location)
 	if not destination:
 		return jsonify({"error": "destination not found"}), 404
 
-	return destination.to_dict(), 200
+	response = destination.to_dict()
+	response["youtube video"] = url_video_youtube
+	return response, 200
 
 
 #READ: Return one stored weather request by its locations

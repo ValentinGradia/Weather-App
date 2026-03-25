@@ -2,6 +2,7 @@ import requests #import request to call externals apis
 from datetime import datetime
 from statistics import mean
 from main import db
+from app.services.Openweather import url, api_key
 
 class Temperature(db.Model):
 	id = db.Column(db.Integer, primary_key=True)
@@ -40,9 +41,6 @@ class Temperature(db.Model):
 	
 	@staticmethod
 	def get_temperature(lat, lon, date):
-		url = "https://api.openweathermap.org/data/2.5/forecast"
-		api_key = "13b6c0efee30c5b09271adb991c804cf"
-
 
 		params = {
 			"lat": lat,
