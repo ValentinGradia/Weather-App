@@ -13,28 +13,6 @@ from app.models.Destination import Destination
 weather_bp = Blueprint("weather", __name__)
 
 
-
-def _read_json_response(url):
-	"""Fetch and decode JSON payload from an HTTP endpoint."""
-	with urlopen(url, timeout=10) as response:
-		return json.loads(response.read().decode("utf-8"))
-
-
-
-def _destination_to_response(destination):
-	"""Convert a Destination database row into a full API response payload."""
-	payload = {}
-	if destination.description:
-		try:
-			payload = json.loads(destination.description)
-		except json.JSONDecodeError:
-			payload = {"raw_description": destination.description}
-
-	payload["id"] = destination.id
-	payload["weather"] = destination.weather
-	return payload
-
-
 #CREATE: Validate input, fetch weather, and persist location/date-range weather request.
 @weather_bp.route("/destinations", methods=["POST"])
 def create_destination():
@@ -105,30 +83,30 @@ def create_destination():
 #READ: Return all stored weather requests from the database
 @weather_bp.route("/destinations", methods=["GET"])
 def get_destinations():
+
+	destinations = [d.to_dict() for d in Destination.query.all()]
+	return destinations, 200
+
+
+# @weather_bp.route("/destinations/<int:destination_id>", methods=["GET"])
+# def get_destination(destination_id):
+# 	"""READ: Return one stored weather request by its database ID."""
+# 	destination = Destination.query.get(destination_id)
+# 	if not destination:
+# 		return jsonify({"error": "destination not found"}), 404
+
+# 	return jsonify(_destination_to_response(destination)), 200
+
 	# destinations = Destination.query.all()
-	data = request.get_json()
-	location = data.get("location")
-	start_date = data.get("start_date")
-	end_date = data.get("end_date")
+	# data = request.get_json()
+	# location = data.get("location")
+	# start_date = data.get("start_date")
+	# end_date = data.get("end_date")
 
-	try:
-		resolved_location = UserInputDestinationValidation._handle_location(location)
-	except Exception:
-		return jsonify({"error": "failed to resolve location"}), 500
-	
-	destinations = Destination.query.get()
-	
-	# return jsonify([_destination_to_response(destination) for destination in destinations]), 200
-
-
-@weather_bp.route("/destinations/<int:destination_id>", methods=["GET"])
-def get_destination(destination_id):
-	"""READ: Return one stored weather request by its database ID."""
-	destination = Destination.query.get(destination_id)
-	if not destination:
-		return jsonify({"error": "destination not found"}), 404
-
-	return jsonify(_destination_to_response(destination)), 200
+	# try:
+	# 	resolved_location = UserInputDestinationValidation._handle_location(location)
+	# except Exception:
+	# 	return jsonify({"error": "failed to resolve location"}), 500
 
 
 # @app.route("/destinations/<int:destination_id>", methods=["PUT", "PATCH"])
