@@ -44,5 +44,10 @@ class Destination(db.Model):
 			"temperatures": [temperature.to_dict() for temperature in self.temperatures],
 		}
 	
-	
+	@staticmethod
+	def get_lat_and_lng_through_coordinates(coordinates):
+		lat = coordinates.get("lat")
+		lon = coordinates.get("lng")
+
+		return lat,lon
 

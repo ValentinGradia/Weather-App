@@ -35,8 +35,7 @@ def create_destination():
 		return jsonify({"error": "location not found"}), 400
 	
 	coordinates = resolved_location[0].get("geometry", {})
-	lat = coordinates.get("lat")
-	lon = coordinates.get("lng")
+	lat,lon = Destination.get_lat_and_lng_through_coordinates(coordinates)
 
 	location_formatted = resolved_location[0]['formatted']
 
@@ -145,10 +144,10 @@ def update_destination(destination_id):
 
 	data_of_destination = UserInputDestinationValidation._handle_location(destination.location)
 	coordinates = data_of_destination[0].get("geometry", {})
-	lat = coordinates.get("lat")
-	lon = coordinates.get("lng")
 
-	range_dates = UserInputDestinationValidation.get_all_dates_between(start_date, end_date)
+	lat,lon = Destination.get_lat_and_lng_through_coordinates(coordinates)
+
+	range_dates = UserInputDestinationValidation.get_all_dates_between(start, end)
 
 	#Get the temperatures of the specific location and delete these
 	Temperature.query.filter_by(destination_id=destination_id).delete()
@@ -165,10 +164,9 @@ def update_destination(destination_id):
 
 	return "The weather within the ranges of dates specified was updated correctly", 200
 
-
+#DELETE: Remove a stored weather request record from the database
 @weather_bp.route("/destinations/<int:destination_id>", methods=["DELETE"])
 def delete_destination(destination_id):
-	"""DELETE: Remove a stored weather request record from the database."""
 	destination = Destination.query.get(destination_id)
 	if not destination:
 		return jsonify({"error": "destination not found"}), 404
