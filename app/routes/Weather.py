@@ -88,14 +88,14 @@ def get_destinations():
 	return destinations, 200
 
 
-# @weather_bp.route("/destinations/<int:destination_id>", methods=["GET"])
-# def get_destination(destination_id):
-# 	"""READ: Return one stored weather request by its database ID."""
-# 	destination = Destination.query.get(destination_id)
-# 	if not destination:
-# 		return jsonify({"error": "destination not found"}), 404
+#READ: Return one stored weather request by its database ID.
+@weather_bp.route("/destinations/<int:destination_id>", methods=["GET"])
+def get_destination(destination_id):
+	destination : Destination = Destination.query.get(destination_id)
+	if not destination:
+		return jsonify({"error": "destination not found"}), 404
 
-# 	return jsonify(_destination_to_response(destination)), 200
+	return destination.to_dict(), 200
 
 	# destinations = Destination.query.all()
 	# data = request.get_json()
