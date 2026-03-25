@@ -2,6 +2,7 @@ from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 import click
 import os
+from flask_migrate import Migrate
 
 
 db = SQLAlchemy()
@@ -24,6 +25,9 @@ def create_app(test_config=None):
 
 
     db.init_app(app)
+
+    #Initiate the migration
+    Migrate(app, db)
 
     from app.routes.Weather import weather_bp
 

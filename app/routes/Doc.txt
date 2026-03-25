@@ -1,0 +1,6 @@
+A Session object is an ongoing transaction of changes to a db (update, insert, delete). These operations are not persisted to the db until
+they are commited. Therefore, session objects register transactions operations
+
+Session.flush() communicates a series of operations to the db. The db maintains them as pending operations in a transaction
+
+Session.commit() execute operations

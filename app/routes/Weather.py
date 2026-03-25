@@ -2,6 +2,7 @@ import json
 from app.models.Validation import UserInputDestinationValidation
 from urllib.request import urlopen
 from app.models.Temperature import Temperature
+from datetime import datetime
 
 from flask import Blueprint, jsonify, request
 
@@ -69,23 +70,25 @@ def create_destination():
 
 	#We store our destination
 	db.session.add(destination)
-	db.session.commit()
+	db.session.flush()
 
 	for date in range_dates:
 		temperature_response = Temperature.get_temperature(lat, lon, date)
+		date_casted = datetime.strptime(date, "%Y-%m-%d").date()
 
-		temperature = Temperature(destination.id, date, temperature_response["morning"][:4], 
+		temperature = Temperature(destination.id, date_casted, temperature_response["morning"][:4], 
 							temperature_response["afternoon"][:4], temperature_response["night"][:4])
 		
 		#We store our temperature
 		db.session.add(temperature)
-		db.session.commit()
 		temperatures_in_location_between_dates.append(
 			{
 				"date": date,
 				"temperatures": temperature_response,
 			}
 		)
+
+	db.session.commit()
 
 
 	return jsonify(
@@ -96,10 +99,9 @@ def create_destination():
 	), 200
 
 
-
+#READ: Return all stored weather requests from the database
 @weather_bp.route("/destinations", methods=["GET"])
 def get_destinations():
-	"""READ: Return all stored weather requests from the database."""
 	destinations = Destination.query.all()
 	return jsonify([_destination_to_response(destination) for destination in destinations]), 200
 
