@@ -1,26 +1,12 @@
 from datetime import date
 
 import pytest
-
-from main import create_app, db
+from main import db
 from app.models.Destination import Destination
 from app.models.Temperature import Temperature
 
 
-#
-@pytest.fixture
-def app_context():
-    app = create_app()
-    app.config["TESTING"] = True
-    app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///:memory:"
-
-    with app.app_context():
-        db.drop_all()
-        db.create_all()
-        yield
-        db.session.remove()
-        db.drop_all()
-
+#Pytest injects the app_context automatically.
 
 def test_destination_stores_submitted_location(app_context):
     destination = Destination("Paris, France")
