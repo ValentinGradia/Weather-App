@@ -58,6 +58,9 @@ def create_destination():
 	lon = coordinates.get("lng")
 
 	location_formatted = resolved_location[0]['formatted']
+
+	if Destination.already_exists(location_formatted, start_date, end_date):
+		return jsonify({"error": "location already stored for this date range"}), 409
 	
 	temperatures_in_location_between_dates = []
 	try:
@@ -90,9 +93,9 @@ def create_destination():
 
 	db.session.commit()
 
-
 	return jsonify(
 		{
+			"id location": destination.id,
 			"location": location_formatted,
 			"weather": temperatures_in_location_between_dates,
 		}
@@ -102,8 +105,20 @@ def create_destination():
 #READ: Return all stored weather requests from the database
 @weather_bp.route("/destinations", methods=["GET"])
 def get_destinations():
-	destinations = Destination.query.all()
-	return jsonify([_destination_to_response(destination) for destination in destinations]), 200
+	# destinations = Destination.query.all()
+	data = request.get_json()
+	location = data.get("location")
+	start_date = data.get("start_date")
+	end_date = data.get("end_date")
+
+	try:
+		resolved_location = UserInputDestinationValidation._handle_location(location)
+	except Exception:
+		return jsonify({"error": "failed to resolve location"}), 500
+	
+	destinations = Destination.query.get()
+	
+	# return jsonify([_destination_to_response(destination) for destination in destinations]), 200
 
 
 @weather_bp.route("/destinations/<int:destination_id>", methods=["GET"])
