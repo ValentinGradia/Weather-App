@@ -110,7 +110,6 @@ def get_destination_through_location():
 	data = request.get_json()
 	location = data.get("location")
 
-
 	try:
 		resolved_location = UserInputDestinationValidation._handle_location(location)
 	except Exception:
@@ -175,4 +174,22 @@ def delete_destination(destination_id):
 	db.session.commit()
 
 	return jsonify({"message": "destination deleted", "id": destination_id}), 200
+
+#DELETE: Remove a stored weather request record from the database
+@weather_bp.route("/destinations/delete_by_location", methods=["DELETE"])
+def delete_destination_by_location():
+	data = request.get_json()
+	location = data.get("location")
+
+	try:
+		resolved_location = UserInputDestinationValidation._handle_location(location)
+	except Exception:
+		return jsonify({"error": "failed to resolve location"}), 500
+
+	destination = Destination.query.filter(db.func.lower(Destination.location) == resolved_location[0]["formatted"].lower()).delete()
+	
+	db.session.delete(destination)
+	db.session.commit()
+
+	return jsonify({"message": "destination deleted"}), 200
 
