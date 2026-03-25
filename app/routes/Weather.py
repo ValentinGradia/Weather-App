@@ -119,10 +119,13 @@ def get_destination_through_location():
 	url_video_youtube = get_video(resolved_location[0]["formatted"])
 
 	destinations = [d.to_dict() for d in Destination.query.filter(db.func.lower(Destination.location) == resolved_location[0]["formatted"].lower()).all()]
-	destinations["youtube video"] = url_video_youtube
+	
+	return {
+		"destinations": destinations,
+		"youtube video": url_video_youtube
+	}, 200
 
-	return destinations, 200
-
+##READ: Export a JSON of one stored weather request by its locations
 @weather_bp.route("/destinations/export_by_location", methods=["GET"])
 def export_destination_through_location():
 	data = request.get_json()
@@ -133,9 +136,16 @@ def export_destination_through_location():
 	except Exception:
 		return jsonify({"error": "failed to resolve location"}), 500
 	
-	destinations = Destination.query.filter(db.func.lower(Destination.location) == resolved_location[0]["formatted"].lower()).all()
+	destination = Destination.query.filter(db.func.lower(Destination.location) == resolved_location[0]["formatted"].lower()).one()
 
-	return export_json(destinations)
+	return export_json(destination), 200
+
+##READ: Export a JSON of one stored weather request by its ID
+@weather_bp.route("/destinations/export_by_id/<int:destination_id>", methods=["GET"])
+def export_destination_through_id(destination_id):
+	destination : Destination = Destination.query.get(destination_id)
+	
+	return export_json(destination), 200
 
 #UPDATE: We update the destination by its ID
 @weather_bp.route("/destinations/<int:destination_id>", methods=["PUT", "PATCH"])
@@ -209,9 +219,10 @@ def delete_destination_by_location():
 	return jsonify({"message": "destination deleted"}), 200
 
 
-def export_json(data):
-    response = make_response(json.dumps([d.to_dict() for d in data], indent=2))
+def export_json(destination):
+    response = make_response(json.dumps(destination.to_dict(), indent=2))
     response.headers["Content-Disposition"] = "attachment; filename=weather_data.json"
     response.headers["Content-Type"] = "application/json"
     return response
+
 
