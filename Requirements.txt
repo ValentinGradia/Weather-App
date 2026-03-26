@@ -1,0 +1,8 @@
+Flask
+Flask-SQLAlchemy
+Flask-Migrate
+SQLAlchemy
+alembic
+requests
+opencage
+pytest
