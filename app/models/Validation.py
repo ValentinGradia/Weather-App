@@ -45,12 +45,7 @@ class UserInputDestinationValidation:
 
 	@staticmethod
 	#Return every date between start and end, including both boundaries.
-	def get_all_dates_between(start_date_raw, end_date_raw):
-		start_date, end_date = UserInputDestinationValidation._validate_date_range(
-			start_date_raw,
-			end_date_raw,
-		)
-
+	def get_all_dates_between(start_date : datetime, end_date : datetime):
 		total_days = (end_date - start_date).days + 1
 		return [
 			(start_date + timedelta(days=offset)).isoformat()

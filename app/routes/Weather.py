@@ -1,6 +1,5 @@
 import json
 from app.models.Validation import UserInputDestinationValidation
-from urllib.request import urlopen
 from app.models.Temperature import Temperature
 from datetime import datetime
 import requests
@@ -40,12 +39,19 @@ def create_destination():
 
 	location_formatted = resolved_location[0]['formatted']
 
-	if Destination.already_exists(location_formatted.lower(), start_date, end_date):
+	try:
+		start, end = UserInputDestinationValidation._validate_date_range(start_date, end_date)
+	except ValidationError as exc:
+		return jsonify({"error": str(exc)}), 400
+
+	if Destination.already_exists(location_formatted.lower(), start, end):
 		return jsonify({"error": "location already stored for this date range"}), 409
 	
 	temperatures_in_location_between_dates = []
+
+
 	try:
-		range_dates = UserInputDestinationValidation.get_all_dates_between(start_date, end_date)
+		range_dates = UserInputDestinationValidation.get_all_dates_between(start, end)
 	except ValidationError as exc:
 		return jsonify({"error": str(exc)}), 400
 	
@@ -211,7 +217,7 @@ def delete_destination_by_location():
 	except Exception:
 		return jsonify({"error": "failed to resolve location"}), 500
 
-	destination = Destination.query.filter(db.func.lower(Destination.location) == resolved_location[0]["formatted"].lower()).delete()
+	destination = Destination.query.filter(db.func.lower(Destination.location) == resolved_location[0]["formatted"].lower()).one()
 	
 	db.session.delete(destination)
 	db.session.commit()
