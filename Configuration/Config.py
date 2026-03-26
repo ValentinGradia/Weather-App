@@ -4,6 +4,6 @@ class TestingConfig:
 
 
 class DevelopmentConfig:
-    SQLALCHEMY_DATABASE_URI = "sqlite:///destinations.db" 
+    SQLALCHEMY_DATABASE_URI = "sqlite:///destination.db" 
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     SECRET_KEY = "dev"
