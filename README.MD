@@ -1,4 +1,4 @@
-# Weather App API
+# Weather App API 
 
 ## Project Description
 This project is a Flask REST API that lets users request weather forecasts for a destination and date range, then stores those requests in a SQLite database.
@@ -117,4 +117,12 @@ Run:
 ```powershell
 python -m pytest tests/unit/test_models.py
 ```
+
+## Video explaining the project
+https://youtu.be/sHFecu1H0L8
+
+## Information
+Valentin G.Gradia
+
+The Product Manager Accelerator Program is designed to support PM professionals through every stage of their careers. From students looking for entry-level jobs to Directors looking to take on a leadership role, our program has helped over hundreds of students fulfill their career aspirations. Our Product Manager Accelerator community are ambitious and committed. Through our program they have learnt, honed and developed new PM and leadership skills, giving them a strong foundation for their future endeavors.
 
